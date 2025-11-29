@@ -2,6 +2,7 @@ import ast
 import secrets
 import string
 import os
+import json
 
 # Resolve key project paths so the mutation engine always knows where the
 # template lives and where the mutated server output should be written.
@@ -71,6 +72,11 @@ def run_mutation():
     # Write out the newly mutated server file that the active node will run.
     with open(OUTPUT_PATH, "w") as dest:
         dest.write(ast.unparse(new_tree))
+
+    # SAVE ROUTE MAP TO JSON
+    STATE_PATH = os.path.join(BASE_DIR, "core", "mutation_state.json")
+    with open(STATE_PATH, "w") as state_file:
+        json.dump(transformer.route_map, state_file, indent=4)
     
     return transformer.route_map
 
