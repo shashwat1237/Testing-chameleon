@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# [VERIFIED] Installs system dependencies
+# Install required system-level packages used by the app (tini for init handling, graphviz for visual generation, procps for process tools, sed for text ops)
 RUN apt-get update && apt-get install -y \
     curl \
     tini \
@@ -13,35 +13,32 @@ RUN apt-get update && apt-get install -y \
 
 COPY requirements.txt .
 
-# [VERIFIED] Installs Python dependencies
+# Install all Python dependencies from the project's pinned requirements list
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create a non-root user and group
-# [FIX] We explicitly set the home directory to /app so Streamlit has a place to write
+# Create a dedicated non-root user/group with /app as home to avoid Streamlit write-permission issues
 RUN addgroup --system --gid 1000 appgroup && \
     adduser --system --uid 1000 --gid 1000 --home /app appuser
 
 COPY . .
 
-# [FIX] Clean up Streamlit Logs
-# 1. Point the HOME variable to /app (where we have write permissions)
+# Configure Streamlit’s environment so it doesn't attempt to write telemetry or machine_id files in restricted directories
 ENV HOME=/app
-# 2. Disable telemetry to stop it from trying to write the 'machine_id' file
 ENV STREAMLIT_GATHER_USAGE_STATS=false
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 ENV STREAMLIT_SERVER_ENABLE_GATHER_USAGE_STATS=false
 
-# Fix line endings for shell execution
+# Normalize Windows-style CRLF endings if present to prevent shell execution errors
 RUN sed -i 's/\r$//' /app/start.sh
 
-# Ensure script is executable and owned by the non-root user
+# Ensure start script is executable and owned by the non-root runtime user
 RUN chmod +x /app/start.sh && \
     chown -R appuser:appgroup /app
 
-# Switch to non-root user
+# Switch execution to the non-root user for security best practices
 USER appuser
 
 ENV PORT=8501
 
-# Final, simplified execution command structure
+# Launch the container through the app's startup script
 CMD ["/bin/sh", "-c", "/app/start.sh"]
