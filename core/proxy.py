@@ -20,7 +20,7 @@ NODES = [
     {"name": "ALPHA", "url": "http://127.0.0.1:8001"},
     {"name": "BETA",  "url": "http://127.0.0.1:8002"}
 ]
-MUTATION_INTERVAL = 15 
+MUTATION_INTERVAL = 30
 
 # GLOBAL STATE
 current_node_index = 0

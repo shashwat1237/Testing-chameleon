@@ -3,7 +3,7 @@ import graphviz
 import time
 import requests
 import os
-
+MUTATION_INTERVAL=30
 st.set_page_config(page_title="CHAMELEON: Cloud Defense", layout="wide", page_icon="🦎")
 
 st.markdown("""
@@ -39,8 +39,8 @@ with col1:
 
     timestamp = time.time()
     seconds = int(timestamp)
-    cycle = (seconds // 15) % 2
-    time_left = 15 - (seconds % 15)
+    cycle = (seconds // MUTATION_INTERVAL) % 2
+    time_left = MUTATION_INTERVAL - (seconds % MUTATION_INTERVAL)
     
     graph.node('H', 'BOTNET\n(Internal)', fillcolor='#ff4b4b', fontcolor='white')
     graph.node('P', 'PROXY\n(Gateway)', fillcolor='#0078ff', fontcolor='white')
@@ -67,7 +67,7 @@ with col2:
     st.subheader("Defense Telemetry")
     st.metric("NEXT MUTATION IN", f"{time_left} seconds")
     
-    current_hash = hex(int(timestamp // 15))[2:8]
+    current_hash = hex(int(timestamp // MUTATION_INTERVAL))[2:8]
     st.text("CURRENT ROUTE MAP:")
     st.code(f"""
 /admin/login  -> /admin/login_{current_hash}
