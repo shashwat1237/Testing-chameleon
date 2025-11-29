@@ -6,7 +6,7 @@ import os
 
 MUTATION_INTERVAL=25
 
-# Configure the Streamlit UI to match the cyber-deck aesthetic used across the project
+# Configure the Streamlit UI to match the cyber-deck aesthetic used across the whole project
 st.set_page_config(page_title="CHAMELEON: Cloud Defense", layout="wide", page_icon="🦎")
 
 st.markdown("""
