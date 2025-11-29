@@ -3,7 +3,9 @@ import time
 from colorama import Fore, Style, init
 
 init(autoreset=True)
-# CLOUD CONFIG: Target the internal proxy
+
+# The bot targets the same proxy that legitimate traffic uses, allowing us to
+# observe how attackers behave under dynamic route mutation.
 PROXY_URL = "http://127.0.0.1:8000"
 
 def log(source, msg, color=Fore.WHITE):
@@ -12,7 +14,7 @@ def log(source, msg, color=Fore.WHITE):
 def run_attack_sequence():
     print(Fore.RED + "\n--- INITIATING ATTACK SEQUENCE ---\n")
 
-    # PHASE 1: INITIAL SUCCESS
+    # Begin by probing a legitimate endpoint before the mutation cycle rotates.
     target = "/admin/login"
     log("BOT", f"Targeting {target}...", Fore.YELLOW)
     
@@ -25,7 +27,8 @@ def run_attack_sequence():
     except:
         log("ERROR", "Proxy unreachable.", Fore.RED)
 
-    # PHASE 2: WAIT FOR MUTATION
+    # Allow enough time to pass so the backend mutates, simulating a bot
+    # that tries to reuse a previously valid endpoint after rotation.
     wait_time = 26
     log("BOT", f"Analyzing vulnerabilities (Waiting {wait_time}s)...", Fore.CYAN)
     for i in range(wait_time, 0, -1):
@@ -33,7 +36,8 @@ def run_attack_sequence():
         time.sleep(1)
     print("\n")
 
-    # PHASE 3: REPLAY ATTACK (The Trap)
+    # Attempt to hit a stale path—this simulates replaying a captured endpoint
+    # that no longer exists, which should route the attacker into the honeypot.
     stale_target = "/admin/login_old_token_x99" 
     log("BOT", f"Replaying attack on captured endpoint: {stale_target}...", Fore.YELLOW)
     
@@ -41,6 +45,7 @@ def run_attack_sequence():
         response = requests.get(f"{PROXY_URL}{stale_target}")
         data = response.json()
         
+        # If honeypot signatures appear in the payload, the system successfully trapped the bot.
         if "account_flag" in str(data):
             log("SUCCESS", "✅ 200 OK - DATABASE DOWNLOADED", Fore.GREEN)
             log("DATA", f"Payload: {data}", Fore.GREEN)
