@@ -3,7 +3,7 @@ import graphviz
 import time
 import requests
 import os
-MUTATION_INTERVAL=30
+MUTATION_INTERVAL=25
 st.set_page_config(page_title="CHAMELEON: Cloud Defense", layout="wide", page_icon="🦎")
 
 st.markdown("""
