@@ -20,7 +20,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🦎 CHAMELEON: ACTIVE DECEPTION SYSTEM")
+st.title("🦎 CHAMELEON: ACTIVE DEFENSE SYSTEM")
 
 # Perform a lightweight health probe to determine if the backend is reachable.
 # The dashboard reflects this instantly so the user knows if the defense layer is alive.
