@@ -82,7 +82,11 @@ with col2:
     
 
 
-    STATE_PATH = os.path.join(os.path.dirname(__file__), "..", "core", "mutation_state.json")
+    # Compute correct path to mutation_state.json for BOTH Render & Local
+    DASHBOARD_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_ROOT = os.path.abspath(os.path.join(DASHBOARD_DIR, ".."))
+    STATE_PATH = os.path.join(PROJECT_ROOT, "core", "mutation_state.json")
+
 
     def load_routes():
         try:
