@@ -61,7 +61,7 @@ with col1:
     else:
         graph.edge('H', 'P', label='Scanning...', color='white', style='dotted')
     
-    st.graphviz_chart(graph, use_container_width=True)
+    st.graphviz_chart(graph, width="stretch")
 
 with col2:
     st.subheader("Defense Telemetry")
