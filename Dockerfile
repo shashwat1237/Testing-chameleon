@@ -13,7 +13,7 @@ RUN useradd --create-home appuser
 WORKDIR /app
 
 # Copy files
-COPY. /app
+COPY . /app
 
 # Install python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
