@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# start.sh - minimally fixed for Render logging and correct logic
+# start.sh — orchestrates the full defense environment: mutation engine,
+# dual backend nodes, proxy layer, attacker simulator, and the dashboard.
 set -euo pipefail
 
 echo "🚀 Booting Chameleon Defense System..."
 
 cleanup() {
+    # Ensure every component shuts down cleanly, avoiding orphaned processes.
     echo "🛑 Shutting down Chameleon Defense System..."
     pkill -f "uvicorn dynamic_server:app" || true
     pkill -f "python -m core.proxy" || true
@@ -16,7 +18,7 @@ trap cleanup SIGINT SIGTERM
 
 export PYTHONUNBUFFERED=1
 
-# Streamlit config
+# Initialize minimal Streamlit configuration so the dashboard can launch cleanly.
 mkdir -p .streamlit
 cat <<EOF > .streamlit/credentials.toml
 [general]
@@ -26,13 +28,14 @@ EOF
 echo "🛠️ Generating initial mutation state..."
 python -m core.mutator || true
 
-# Mutator writes active_server.py INSIDE project (not /tmp in your file)
+# The mutator generates a runtime server module inside the project directory.
 RUNTIME_MUTATED="target_app/active_server.py"
 
 WAIT_SECONDS=0
 MAX_WAIT=10
 echo "[startup] Waiting for runtime mutated server at ${RUNTIME_MUTATED}..."
 
+# Give the system a small buffer to allow the mutator to finish generating the file.
 while [ ! -f "$RUNTIME_MUTATED" ] && [ $WAIT_SECONDS -lt $MAX_WAIT ]; do
     sleep 0.5
     WAIT_SECONDS=$((WAIT_SECONDS+1))
@@ -60,14 +63,13 @@ echo "🤖 Launching Hacker Bot..."
 python -m demo_scripts.hacker_bot &
 sleep 0.5
 
-# 🔥 ALL LOGS ARE NOW DIRECTLY VISIBLE IN RENDER
-# (No redirects, no tails, pure stdout)
+# All services log directly to Render stdout for real-time visibility.
 echo "📡 Logs streaming directly to Render..."
 
 PORT=${PORT:-10000}
 echo "✅ Starting Dashboard on Port $PORT"
 
-# Streamlit MUST run foreground
+# Streamlit remains in the foreground as the primary visible service.
 python -m streamlit run dashboard.py \
   --server.port $PORT \
   --server.enableCORS false \
@@ -75,4 +77,4 @@ python -m streamlit run dashboard.py \
   --server.headless true \
   --theme.base "dark"
 
-# If Streamlit exits, cleanup runs via trap
+# If Streamlit exits, the trap will capture the signal and perform cleanup.
