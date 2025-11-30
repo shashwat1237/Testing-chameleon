@@ -1,8 +1,7 @@
 fastapi
-uvicorn
-httpx==0.23.3
-requests
-colorama
+uvicorn[standard]
 streamlit
+httpx
 graphviz
-watchdog
+colorama
+streamlit-autorefresh
