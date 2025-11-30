@@ -1,20 +1,23 @@
-# core/mutator.py (REPLACE)
+# core/mutator.py
+# Small, necessary fixes:
+# - Writes runtime mutated server to /tmp/active_server.py (Render writable)
+# - Writes mutation_state.json atomically to /tmp/mutation_state.json
+# - Still attempts to write project output (best-effort) for local convenience
+# - Preserves original AST mutation logic exactly
+
 import ast
 import secrets
 import string
 import os
 import json
 import traceback
+from typing import Dict
 
-# Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, "target_app", "template.py")
-
-# local project output (best-effort, not required on Render)
-PROJECT_OUTPUT_PATH = os.path.join(BASE_DIR, "target_app", "active_server.py")
-# runtime (Render-safe) output
-RUNTIME_OUTPUT_PATH = "/tmp/active_server.py"
-STATE_PATH = "/tmp/mutation_state.json"
+PROJECT_OUTPUT_PATH = os.path.join(BASE_DIR, "target_app", "active_server.py")  # best-effort local write
+RUNTIME_OUTPUT_PATH = "/tmp/active_server.py"  # Render-safe runtime
+STATE_PATH = "/tmp/mutation_state.json"       # Render-safe JSON state
 
 def generate_chaos_string(length=6):
     chars = string.ascii_lowercase + string.digits
@@ -22,7 +25,7 @@ def generate_chaos_string(length=6):
 
 class ChaosTransformer(ast.NodeTransformer):
     def __init__(self):
-        self.route_map = {}
+        self.route_map: Dict[str, str] = {}
 
     def visit_FunctionDef(self, node):
         if not node.decorator_list:
@@ -49,6 +52,12 @@ class ChaosTransformer(ast.NodeTransformer):
 
         return node
 
+def _atomic_write(path: str, content: str, mode: str = "w", encoding: str = "utf-8"):
+    tmp = f"{path}.tmp"
+    with open(tmp, mode, encoding=encoding) as f:
+        f.write(content)
+    os.replace(tmp, path)  # atomic on POSIX
+
 def run_mutation():
     if not os.path.exists(TEMPLATE_PATH):
         print(f"[MUTATOR][ERROR] Template not found at {TEMPLATE_PATH}")
@@ -62,27 +71,26 @@ def run_mutation():
     ast.fix_missing_locations(new_tree)
     mutated_source = ast.unparse(new_tree)
 
-    # Best-effort: write project file (useful locally)
+    # Best-effort local write (may fail on Render; non-fatal)
     try:
         with open(PROJECT_OUTPUT_PATH, "w", encoding="utf-8") as dst:
             dst.write(mutated_source)
         print(f"[MUTATOR] Wrote local project output -> {PROJECT_OUTPUT_PATH}")
     except Exception as e:
-        print(f"[MUTATOR] Local write skipped: {e}")
+        print(f"[MUTATOR] Skipped local write: {e}")
 
-    # Write runtime mutated server to /tmp so Render + nodes can import it
+    # Write runtime mutated server to /tmp (use atomic write)
     try:
-        with open(RUNTIME_OUTPUT_PATH, "w", encoding="utf-8") as dst:
-            dst.write(mutated_source)
+        _atomic_write(RUNTIME_OUTPUT_PATH, mutated_source)
         print(f"[MUTATOR] Wrote runtime output -> {RUNTIME_OUTPUT_PATH}")
     except Exception as e:
         print(f"[MUTATOR][ERROR] Failed to write runtime output: {e}")
         print(traceback.format_exc())
 
-    # Save route map to Render-safe path
+    # Save route map as JSON atomically to /tmp
     try:
-        with open(STATE_PATH, "w", encoding="utf-8") as f:
-            json.dump(transformer.route_map, f, indent=4)
+        json_text = json.dumps(transformer.route_map, indent=4)
+        _atomic_write(STATE_PATH, json_text)
         print(f"[MUTATOR] State saved -> {STATE_PATH}")
     except Exception as e:
         print(f"[MUTATOR][ERROR] Failed writing state: {e}")
