@@ -99,9 +99,9 @@ Chameleon-The-Active-Defense-System/
 ├── README.md                    # Project documentation
 │
 └── Chameleon Defense System (Shashwat Shekhar).pdf
-                                 # Project presentation / documentation (hackathon submission)
+|                                 # Project presentation / documentation (hackathon submission)
 |
-|____dynamic_server.py
+|____dynamic_server.py This loader is responsible for pulling in the most recently mutated FastAPI application from /tmp/active_server.py. Uvicorn imports this file and picks up whatever version of the app the mutation engine generated at runtime.
 
 ```
 
