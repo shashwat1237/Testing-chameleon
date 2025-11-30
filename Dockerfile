@@ -1,25 +1,26 @@
-# Dockerfile - corrected to use tini as PID 1 and to run start.sh
+# Dockerfile - Corrected for Render.com
 FROM python:3.11-slim
 
-# install tini for proper signal handling and graphviz system packages
+# Install tini (signal handling), graphviz (dashboard), and procps (for pkill in start.sh)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     graphviz \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
-# create app user for safety
+# Create app user for security
 RUN useradd --create-home appuser
 WORKDIR /app
 
-# copy project files
-COPY . /app
+# Copy files
+COPY. /app
 
-# install python deps
+# Install python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# ensure start.sh is executable
+# Ensure start script is executable
 RUN chmod +x /app/start.sh
 
-# use tini as PID 1 so signals are forwarded to children
+# Use Tini as the entrypoint
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/app/start.sh"]
