@@ -4,17 +4,18 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-# The bot targets the same proxy that legitimate traffic uses, allowing us to
-# observe how attackers behave under dynamic route mutation.
+# This bot simulates an automated attacker hitting the same proxy used by real clients.
+# Its purpose is to demonstrate how a malicious agent behaves when the backend routes keep mutating.
 PROXY_URL = "http://127.0.0.1:8000"
 
 def log(source, msg, color=Fore.WHITE):
+    # Simple colored logging wrapper for readability during the attack simulation.
     print(f"{color}[{source}] {msg}{Style.RESET_ALL}")
 
 def run_attack_sequence():
     print(Fore.RED + "\n--- INITIATING ATTACK SEQUENCE ---\n")
 
-    # Begin by probing a legitimate endpoint before the mutation cycle rotates.
+    # Phase 1: Try accessing a real endpoint before mutation occurs.
     target = "/admin/login"
     log("BOT", f"Targeting {target}...", Fore.YELLOW)
     
@@ -27,8 +28,7 @@ def run_attack_sequence():
     except:
         log("ERROR", "Proxy unreachable.", Fore.RED)
 
-    # Allow enough time to pass so the backend mutates, simulating a bot
-    # that tries to reuse a previously valid endpoint after rotation.
+    # Phase 2: Wait for mutation to cycle so the previously valid endpoint becomes stale.
     wait_time = 26
     log("BOT", f"Analyzing vulnerabilities (Waiting {wait_time}s)...", Fore.CYAN)
     for i in range(wait_time, 0, -1):
@@ -36,8 +36,8 @@ def run_attack_sequence():
         time.sleep(1)
     print("\n")
 
-    # Attempt to hit a stale path—this simulates replaying a captured endpoint
-    # that no longer exists, which should route the attacker into the honeypot.
+    # Phase 3: Replay the old endpoint, pretending the bot saved it earlier.
+    # The system should now classify this as an intrusion and redirect to the honeypot.
     stale_target = "/admin/login_old_token_x99" 
     log("BOT", f"Replaying attack on captured endpoint: {stale_target}...", Fore.YELLOW)
     
@@ -45,7 +45,7 @@ def run_attack_sequence():
         response = requests.get(f"{PROXY_URL}{stale_target}")
         data = response.json()
         
-        # If honeypot signatures appear in the payload, the system successfully trapped the bot.
+        # Honeypot detection: presence of special flags indicates the trap triggered successfully.
         if "account_flag" in str(data):
             log("SUCCESS", "✅ 200 OK - DATABASE DOWNLOADED", Fore.GREEN)
             log("DATA", f"Payload: {data}", Fore.GREEN)
